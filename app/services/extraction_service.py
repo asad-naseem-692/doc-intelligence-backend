@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -7,6 +8,19 @@ ALLOWED_CONTENT_TYPES = {
 }
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def _clean_extracted_text(text: str) -> str:
+    """Normalize whitespace, remove isolated newlines inside words/lines, and trim."""
+    # Replace non-standard whitespace with standard spaces
+    text = text.replace("\r", "\n").replace("\f", "\n").replace("\v", "\n")
+    # Replace single newlines surrounded by regular letters with a single space (unwrapping words)
+    text = re.sub(r"(?<=\w)\n(?=\w)", " ", text)
+    # Replace multiple spaces with a single space
+    text = re.sub(r"[ \t]+", " ", text)
+    # Replace 3 or more newlines with double newline (paragraph break)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def extract_text_from_file(file_path: str) -> str:
@@ -38,9 +52,10 @@ def _extract_from_pdf(file_path: str) -> str:
             if text:
                 parts.append(text.strip())
         extracted = "\n\n".join(parts).strip()
-        if not extracted:
+        cleaned = _clean_extracted_text(extracted)
+        if not cleaned:
             raise ValueError("No readable text found in PDF")
-        return extracted
+        return cleaned
     except Exception as e:
         raise ValueError(f"PDF extraction failed: {e}")
 
@@ -55,8 +70,9 @@ def _extract_from_docx(file_path: str) -> str:
             if text:
                 parts.append(text)
         extracted = "\n\n".join(parts).strip()
-        if not extracted:
+        cleaned = _clean_extracted_text(extracted)
+        if not cleaned:
             raise ValueError("No readable text found in DOCX")
-        return extracted
+        return cleaned
     except Exception as e:
         raise ValueError(f"DOCX extraction failed: {e}")

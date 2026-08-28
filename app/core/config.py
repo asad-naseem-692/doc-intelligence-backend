@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 3072
     GEMINI_CHAT_MODEL: str = "gemini-3.6-flash"
-    RAG_CONFIDENCE_THRESHOLD: float = 0.65
+    RAG_CONFIDENCE_THRESHOLD: float = 0.50
     ENVIRONMENT: str = "development"
 
     @field_validator("CORS_ORIGINS", mode="before")
