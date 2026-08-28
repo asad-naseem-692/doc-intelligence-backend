@@ -1,11 +1,15 @@
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:3000"]
+    CORS_ORIGINS: Union[str, List[str]] = [
+        "http://localhost:3000",
+        "https://doc-intelligence-frontend-tan.vercel.app"
+    ]
+    CORS_ORIGIN_REGEX: str = r"^https:\/\/.*\.vercel\.app$"
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
@@ -23,7 +27,10 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, list):
             return v
-        return []
+        return [
+            "http://localhost:3000",
+            "https://doc-intelligence-frontend-tan.vercel.app"
+        ]
 
     model_config = SettingsConfigDict(
         env_file=".env",
