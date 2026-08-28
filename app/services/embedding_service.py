@@ -47,8 +47,8 @@ def _embed_batch_with_retry(texts: List[str]) -> List[List[float]]:
                 model=settings.GEMINI_EMBEDDING_MODEL,
                 input=texts,
             )
-            # response.data is sorted by index
-            return [item.embedding for item in sorted(response.data, key=lambda x: x.index)]
+            # Gemini returns response.data in input order (index may be None for first element)
+            return [item.embedding for item in response.data]
         except Exception as e:
             last_error = e
             wait_time = RETRY_BACKOFF_BASE ** attempt
