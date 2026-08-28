@@ -1,3 +1,4 @@
+import re
 from typing import List
 from dataclasses import dataclass
 
@@ -12,6 +13,15 @@ class TextChunk:
     text: str
 
 
+def _split_into_sentences(text: str) -> List[str]:
+    """
+    Deterministic sentence tokenizer using regex to avoid NLTK filesystem
+    hardlink security restrictions (CWE-59 / pathsec) in containerized environments.
+    """
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[TextChunk]:
     """
     Split text into overlapping chunks using LlamaIndex's token-aware splitter.
@@ -23,8 +33,8 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     splitter = SentenceSplitter(
         chunk_size=chunk_size,
         chunk_overlap=overlap,
+        chunking_tokenizer_fn=_split_into_sentences,
     )
-    # SentenceSplitter.split_text returns a list of raw strings
     raw_chunks = splitter.split_text(text)
 
     chunks = []
