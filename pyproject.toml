@@ -1,12 +1,9 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI Document Intelligence System Backend"
 readme = "README.md"
-authors = [
-    { name = "asad-naseem-692", email = "asadnaseem692@gmail.com" }
-]
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.13.1",
     "fastapi>=0.110.0",
@@ -27,9 +24,5 @@ dependencies = [
     "uvicorn[standard]>=0.28.0",
 ]
 
-[project.scripts]
-backend = "backend:main"
-
-[build-system]
-requires = ["uv_build>=0.12.7,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv]
+package = false
