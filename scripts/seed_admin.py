@@ -1,5 +1,10 @@
-import argparse
+import os
 import sys
+import argparse
+
+# Ensure backend root is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.core.database import SessionLocal
 from app.core.security import get_password_hash
 from app.models.user import User
@@ -10,7 +15,7 @@ def seed_admin(name: str, email: str, password: str):
     try:
         existing = db.query(User).filter(User.email == email).first()
         if existing:
-            print(f"User with email '{email}' already exists. Role: {existing.role}")
+            print(f"User with email '{email}' already exists. Current role: {existing.role}")
             if existing.role != "admin":
                 existing.role = "admin"
                 db.commit()
