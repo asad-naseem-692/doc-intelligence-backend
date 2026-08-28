@@ -1,10 +1,12 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.query import QueryRequest, QueryResponse
+from app.models.qa_history import QAHistory
+from app.schemas.query import QueryRequest, QueryResponse, QAHistoryEntry
 from app.services.rag_service import answer_question
 
 router = APIRouter()
@@ -35,3 +37,22 @@ def query_documents(
         document_id=request.document_id,
     )
     return response
+
+
+@router.get("/history", response_model=List[QAHistoryEntry], status_code=status.HTTP_200_OK)
+def get_qa_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Return all past Q&A records for the authenticated user, ordered by creation date descending.
+    Owner-isolated: never returns other users' queries.
+    FEAT-19
+    """
+    history = (
+        db.query(QAHistory)
+        .filter(QAHistory.user_id == current_user.id)
+        .order_by(QAHistory.created_at.desc())
+        .all()
+    )
+    return history

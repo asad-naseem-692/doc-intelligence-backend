@@ -44,7 +44,6 @@ def user2_headers(client):
 
 def _make_sample_pdf(text_content: str) -> bytes:
     """Create a minimal single-page PDF with custom text."""
-    # Simple valid PDF
     stream_content = f"BT /F1 12 Tf 50 700 Td ({text_content}) Tj ET".encode("utf-8")
     stream_len = len(stream_content)
     return (
@@ -136,3 +135,28 @@ def test_query_isolation_between_users(client, user2_headers):
     data = res.json()
     assert data["is_fallback"] is True
     assert data["citations"] == []
+
+
+def test_get_qa_history(client, user1_headers):
+    """GET /query/history returns previous Q&A pairs for the authenticated user."""
+    res = client.get("/query/history", headers=user1_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    first = data[0]
+    assert "id" in first
+    assert "question" in first
+    assert "answer" in first
+    assert "citations" in first
+    assert "is_fallback" in first
+    assert "created_at" in first
+
+
+def test_qa_history_isolation(client, user1_headers, user2_headers):
+    """User 2 only sees User 2's history, never User 1's."""
+    res1 = client.get("/query/history", headers=user1_headers)
+    res2 = client.get("/query/history", headers=user2_headers)
+    ids1 = {entry["id"] for entry in res1.json()}
+    ids2 = {entry["id"] for entry in res2.json()}
+    assert ids1.isdisjoint(ids2)
