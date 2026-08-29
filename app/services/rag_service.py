@@ -37,7 +37,9 @@ def retrieve_relevant_chunks(
     Hybrid Retrieval:
     Combines dense vector similarity (pgvector cosine distance) with
     PostgreSQL full-text search (ts_rank), strictly scoped to the user's ready documents.
-    Returns list of (Chunk, Document, combined_score) sorted by relevance.
+    Uses additive keyword boosting (dense similarity base + FTS boost) so pure semantic matches
+    are never deflated when FTS is 0.
+    Returns list of (Chunk, Document, hybrid_score) sorted by relevance.
     FEAT-15
     """
     # 1. Base query strictly scoped to current user's ready documents
@@ -62,7 +64,7 @@ def retrieve_relevant_chunks(
         query = query.filter(Document.id == document_id)
 
     # Fetch top candidates by vector distance
-    results = query.order_by("distance").limit(top_k * 2).all()
+    results = query.order_by("distance").limit(top_k * 3).all()
 
     if not results:
         return []
@@ -72,10 +74,12 @@ def retrieve_relevant_chunks(
         # Cosine similarity: 1 - cosine_distance (distance in [0, 2])
         # Normalized similarity in [0, 1]
         cosine_sim = max(0.0, 1.0 - float(dist)) if dist is not None else 0.0
-        keyword_score = min(1.0, float(fts_rank) * 2.0) if fts_rank is not None else 0.0
+        
+        # Additive keyword boost: exact FTS hits boost score up to +0.20
+        keyword_boost = min(0.20, float(fts_rank) * 0.5) if fts_rank is not None else 0.0
 
-        # Hybrid score: 75% vector similarity + 25% keyword signal
-        hybrid_score = (0.75 * cosine_sim) + (0.25 * keyword_score)
+        # Hybrid score: base cosine similarity + positive keyword boost (capped at 1.0)
+        hybrid_score = min(1.0, cosine_sim + keyword_boost)
         scored_chunks.append((chunk, doc, hybrid_score))
 
     # Sort descending by hybrid score and take top_k
@@ -134,7 +138,7 @@ def answer_question(
     """
     Orchestrate full RAG pipeline:
     1. Embed query (Gemini)
-    2. Hybrid retrieve user's chunks
+    2. Hybrid retrieve user's chunks with additive keyword boost
     3. Check confidence threshold (FEAT-17)
     4. Generate grounded answer (FEAT-16)
     5. Build citations (FEAT-18)
