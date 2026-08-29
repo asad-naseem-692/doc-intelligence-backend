@@ -39,9 +39,9 @@ def seed_admin(name: str, email: str, password: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed an admin user")
-    parser.add_argument("--name", default="System Administrator", help="Admin user name")
-    parser.add_argument("--email", default="admin@enterprise.ai", help="Admin email")
-    parser.add_argument("--password", default="AdminPass123!", help="Admin password")
+    parser.add_argument("--name", default="Administrator", help="Admin user name")
+    parser.add_argument("--email", default="admin@example.com", help="Admin email")
+    parser.add_argument("--password", default="Admin123!", help="Admin password")
     
     args = parser.parse_args()
     seed_admin(args.name, args.email, args.password)
